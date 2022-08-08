@@ -652,16 +652,17 @@ public class DocumentationLexer extends AbstractLexer {
             lookAheadChar = reader.peek(lookAheadCount);
         }
 
-        switch (identifier) {
-            case LexerTerminals.TYPE:
-            case LexerTerminals.SERVICE:
-            case LexerTerminals.VARIABLE:
-            case LexerTerminals.VAR:
-            case LexerTerminals.ANNOTATION:
-            case LexerTerminals.MODULE:
-            case LexerTerminals.FUNCTION:
-            case LexerTerminals.PARAMETER:
-            case LexerTerminals.CONST:
+        Keyword identifierEnum = Keyword.getValue(identifier);
+        switch (identifierEnum) {
+            case TYPE:
+            case SERVICE:
+            case VARIABLE:
+            case VAR:
+            case ANNOTATION:
+            case MODULE:
+            case FUNCTION:
+            case PARAMETER:
+            case CONST:
                 // Look ahead for a single backtick.
                 // There could be spaces or tabs in between.
                 while (true) {
@@ -752,24 +753,25 @@ public class DocumentationLexer extends AbstractLexer {
 
     private STToken processReferenceType() {
         String tokenText = getLexeme();
-        switch (tokenText) {
-            case LexerTerminals.TYPE:
+        Keyword tokenTextEnum = Keyword.getValue(tokenText);
+        switch (tokenTextEnum) {
+            case TYPE:
                 return getDocSyntaxToken(SyntaxKind.TYPE_DOC_REFERENCE_TOKEN);
-            case LexerTerminals.SERVICE:
+            case SERVICE:
                 return getDocSyntaxToken(SyntaxKind.SERVICE_DOC_REFERENCE_TOKEN);
-            case LexerTerminals.VARIABLE:
+            case VARIABLE:
                 return getDocSyntaxToken(SyntaxKind.VARIABLE_DOC_REFERENCE_TOKEN);
-            case LexerTerminals.VAR:
+            case VAR:
                 return getDocSyntaxToken(SyntaxKind.VAR_DOC_REFERENCE_TOKEN);
-            case LexerTerminals.ANNOTATION:
+            case ANNOTATION:
                 return getDocSyntaxToken(SyntaxKind.ANNOTATION_DOC_REFERENCE_TOKEN);
-            case LexerTerminals.MODULE:
+            case MODULE:
                 return getDocSyntaxToken(SyntaxKind.MODULE_DOC_REFERENCE_TOKEN);
-            case LexerTerminals.FUNCTION:
+            case FUNCTION:
                 return getDocSyntaxToken(SyntaxKind.FUNCTION_DOC_REFERENCE_TOKEN);
-            case LexerTerminals.PARAMETER:
+            case PARAMETER:
                 return getDocSyntaxToken(SyntaxKind.PARAMETER_DOC_REFERENCE_TOKEN);
-            case LexerTerminals.CONST:
+            case CONST:
                 return getDocSyntaxToken(SyntaxKind.CONST_DOC_REFERENCE_TOKEN);
             default:
                 assert false : "Invalid reference type";
