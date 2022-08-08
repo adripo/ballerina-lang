@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.regex.Pattern;
 
 import static org.ballerinalang.test.TestRunnerUtils.ABS_LINE_NUM;
 import static org.ballerinalang.test.TestRunnerUtils.ACTUAL_LINE_NUM;
@@ -50,6 +50,8 @@ public class ReportGenerator {
     public static final String FAILED_TESTS_REPORT = "failed_tests_report_template.html";
     private static final String START_TABLE_ROW = "<tr class=\"active-row\">";
     private static final String END_TABLE_ROW  = "</tr>";
+    private static final Pattern TABLE_DATA_PATTERN = Pattern.compile("<td></td>");
+    private static final Pattern FILE_NAME_PATTERN = Pattern.compile("FileName");
     private static List<Map<String, String>> detailsOfFailedTests = new ArrayList<>();
     private static List<Map<String, String>> detailsOfSkippedTests = new ArrayList<>();
     private static Map<String, List<Map<String, String>>> detailsOfErrorKindTests = new LinkedHashMap<>();
@@ -64,13 +66,9 @@ public class ReportGenerator {
 
     public static void addDetailsOfErrorKindTests(Map<String, String> detailsOfTest) {
         String fileName = detailsOfTest.get(FILENAME);
-        if (detailsOfErrorKindTests.containsKey(fileName)) {
-            List<Map<String, String>> details = detailsOfErrorKindTests.get(fileName);
-            details.add(detailsOfTest);
-            return;
-        }
-        List<Map<String, String>> details = new ArrayList<>() {{ add(detailsOfTest); }};
-        detailsOfErrorKindTests.put(fileName, details);
+        List<Map<String, String>> details = detailsOfErrorKindTests.computeIfAbsent(fileName,
+                k -> new ArrayList<Map<String, String>>());
+        details.add(detailsOfTest);
     }
 
     private static String reportTemplate(String templateFileName) throws IOException {
@@ -97,7 +95,7 @@ public class ReportGenerator {
             return;
         }
         String template = reportTemplate(FAILED_TESTS_REPORT);
-        StringBuilder detailsOfTests = new StringBuilder();
+        StringBuilder detailsOfTests = new StringBuilder(50 * detailsOfFailedTests.size());
         for (Map<String, String> test : detailsOfFailedTests) {
             String diagnostics = test.get(TestRunnerUtils.FORMAT_ERRORS);
             if (diagnostics != null) {
@@ -117,16 +115,15 @@ public class ReportGenerator {
             return;
         }
         String template = reportTemplate(ERROR_KIND_TESTS_REPORT);
-        Set<String> files = detailsOfErrorKindTests.keySet();
-        for (String file : files) {
+        for (Map.Entry<String, List<Map<String, String>>> entry : detailsOfErrorKindTests.entrySet()) {
+            String file = entry.getKey();
             StringBuilder detailsOfTests = new StringBuilder();
-            List<Map<String, String>> detailsOfErrorKindTest = detailsOfErrorKindTests.get(file);
+            List<Map<String, String>> detailsOfErrorKindTest = entry.getValue();
             for (Map<String, String> test : detailsOfErrorKindTest) {
                 detailsOfTests.append(generateErrorDetails(test.get(ACTUAL_LINE_NUM), test.get(EXPECTED_LINE_NUM),
                                                            test.get(ACTUAL_VALUE), test.get(EXPECTED_VALUE)));
             }
-            generateReport(template, file.substring(0, file.indexOf(".")),
-                                                                                   detailsOfTests);
+            generateReport(template, file.substring(0, file.indexOf(".")), detailsOfTests);
         }
     }
 
@@ -146,46 +143,62 @@ public class ReportGenerator {
     private static void generateReport(String template, String filename, StringBuilder results)
                                        throws IOException {
         File file = new File(REPORT_DIR + "/" + filename + HTML_EXTENSION);
-        String newContent = template.replaceAll("<td></td>", results.toString()).replaceAll("FileName", filename);
+        String newContent = FILE_NAME_PATTERN.matcher(TABLE_DATA_PATTERN.matcher(template).replaceAll(results.toString())).replaceAll(filename);
         FileWriter tempFileWriter = new FileWriter(file);
         tempFileWriter.write(newContent);
         tempFileWriter.close();
     }
 
+    private static int tableRowStringSizeCalculation(String... strings) {
+        int tableRowStringSize = START_TABLE_ROW.length() + END_TABLE_ROW.length();
+        tableRowStringSize += strings.length * 9;
+        for (String st : strings) {
+            tableRowStringSize += st != null? st.length() : 0;
+        }
+        return tableRowStringSize;
+    }
+
     private static String generateFailedTestsDetails(String fileName, String testKind, String actualLineNum,
                                                      String expectedLineNum, String actualOutput,
                                                      String expectedOutput) {
-        String tableRow = START_TABLE_ROW;
-        tableRow  = tableRow + String.format("<td>%s</td>", fileName);
-        tableRow  = tableRow + String.format("<td>%s</td>", testKind);
-        tableRow  = tableRow + String.format("<td>%s</td>", expectedLineNum);
-        tableRow  = tableRow + String.format("<td>%s</td>", actualLineNum);
-        tableRow  = tableRow + String.format("<td>%s</td>", expectedOutput);
-        tableRow  = tableRow + String.format("<td>%s</td>", actualOutput);
-        tableRow = tableRow + END_TABLE_ROW;
+        StringBuilder tableRowSb = new StringBuilder(tableRowStringSizeCalculation(fileName, testKind, actualLineNum,
+                expectedLineNum, actualOutput, expectedOutput));
+        tableRowSb.append(START_TABLE_ROW);
+        tableRowSb.append("<td>").append(fileName).append("</td>");
+        tableRowSb.append("<td>").append(testKind).append("</td>");
+        tableRowSb.append("<td>").append(expectedLineNum).append("</td>");
+        tableRowSb.append("<td>").append(actualLineNum).append("</td>");
+        tableRowSb.append("<td>").append(expectedOutput).append("</td>");
+        tableRowSb.append("<td>").append(actualOutput).append("</td>");
+        tableRowSb.append(END_TABLE_ROW);
 
-        return tableRow;
+        return tableRowSb.toString();
     }
 
     private static String generateErrorDetails(String actualLineNum, String expectedLineNum, String actualErrorMsg,
                                                String errorDesc) {
-        String tableRow = START_TABLE_ROW;
-        tableRow  = tableRow + String.format("<td>%s</td>", expectedLineNum);
-        tableRow  = tableRow + String.format("<td>%s</td>", actualLineNum);
-        tableRow  = tableRow + String.format("<td>%s</td>", actualErrorMsg);
-        tableRow  = tableRow + String.format("<td>%s</td>", errorDesc);
-        tableRow = tableRow + END_TABLE_ROW;
+        StringBuilder tableRowSb = new StringBuilder(tableRowStringSizeCalculation(expectedLineNum, actualLineNum,
+                actualErrorMsg, errorDesc));
+        tableRowSb.append(START_TABLE_ROW);
+        tableRowSb.append("<td>").append(expectedLineNum).append("</td>");
+        tableRowSb.append("<td>").append(actualLineNum).append("</td>");
+        tableRowSb.append("<td>").append(actualErrorMsg).append("</td>");
+        tableRowSb.append("<td>").append(errorDesc).append("</td>");
+        tableRowSb.append(END_TABLE_ROW);
 
-        return tableRow;
+        return tableRowSb.toString();
     }
 
     private static String generateSkippedTestsDetails(String fileName, String testKind, String lineNum) {
-        String tableRow = START_TABLE_ROW;
-        tableRow  = tableRow + String.format("<td>%s</td>", fileName);
-        tableRow  = tableRow + String.format("<td>%s</td>", testKind);
-        tableRow  = tableRow + String.format("<td>%s</td>", lineNum);
-        tableRow = tableRow + END_TABLE_ROW;
 
-        return tableRow;
+        StringBuilder tableRowSb = new StringBuilder(tableRowStringSizeCalculation(fileName, testKind,
+                lineNum));
+        tableRowSb.append(START_TABLE_ROW);
+        tableRowSb.append("<td>").append(fileName).append("</td>");
+        tableRowSb.append("<td>").append(testKind).append("</td>");
+        tableRowSb.append("<td>").append(lineNum).append("</td>");
+        tableRowSb.append(END_TABLE_ROW);
+
+        return tableRowSb.toString();
     }
 }

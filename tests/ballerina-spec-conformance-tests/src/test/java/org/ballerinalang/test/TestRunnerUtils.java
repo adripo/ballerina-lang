@@ -113,9 +113,9 @@ public class TestRunnerUtils {
         //line number relative to .balt file
         absLineNum = 1;
         String line = buffReader.readLine();
+        String tempFileNameHeader = fileName.substring(0, fileName.length() - BALT_EXTENSION.length()) + UNDERSCORE;
         while (line != null) {
-            String tempFileName = fileName.substring(0, fileName.indexOf(".")) + UNDERSCORE + absLineNum;
-
+            String tempFileName = tempFileNameHeader + absLineNum;
             Map<String, String> headersOfTestCase = readHeaders(line, buffReader);
             String kindOfTestCase = validateKindOfTest(headersOfTestCase.get(TEST_CASE));
 
@@ -238,7 +238,7 @@ public class TestRunnerUtils {
     }
 
     private static Map<String, String> readHeaders(String line, BufferedReader buffReader) throws IOException {
-        ArrayList<String> requiredHeaders = new ArrayList<>(Arrays.asList(TEST_CASE, DESCRIPTION, LABELS));
+        HashSet<String> requiredHeaders = new HashSet<>(Arrays.asList(TEST_CASE, DESCRIPTION, LABELS));
         Map<String, String> headers = new HashMap<>();
         String key = null;
         String value = null;
@@ -374,7 +374,7 @@ public class TestRunnerUtils {
     }
 
     public static Map<String, Object> getDetailsOfErrorKindTests(ITestContext context) {
-        Map<String, Object> results = new HashMap<>();
+        Map<String, Object> results = new HashMap<>(3);
         results.put("LineNumbers", context.getAttribute("LineNumbers"));
         results.put("OutputValues", context.getAttribute("OutputValues"));
         results.put("Diagnostics", context.getAttribute("Diagnostics"));
@@ -385,17 +385,20 @@ public class TestRunnerUtils {
     private static void getDetailsOfDiagnostics(Collection<Diagnostic> diagnostics, List<String> actualLineNumbers,
                                                 List<String> actualErrorMessages, int absLineNum) {
         Iterator<Diagnostic> iterator = diagnostics.iterator();
+        Set<Integer> actualLineNumbersSet = new HashSet<>(diagnostics.size());
+        int offSet = 1 + absLineNum;
         for (int i = 0; i < diagnostics.size(); i++) {
             Diagnostic diagnostic = iterator.next();
-            String actualLineNum =
-                    String.valueOf(diagnostic.location().lineRange().startLine().line() + 1 + absLineNum);
+            int actualLineNumInt = diagnostic.location().lineRange().startLine().line() + offSet;
+            String actualLineNum = String.valueOf(actualLineNumInt);
             String message = diagnostic.message().replace(CARRIAGE_RETURN_CHAR, EMPTY_STRING);
-            if (actualLineNumbers.contains(actualLineNum)) {
+            if (actualLineNumbersSet.contains(actualLineNumInt)) {
                 int index = actualLineNumbers.indexOf(actualLineNum);
                 actualErrorMessages.set(index, actualErrorMessages.get(index) + ", " + message);
             } else {
                 actualErrorMessages.add(message);
                 actualLineNumbers.add(actualLineNum);
+                actualLineNumbersSet.add(actualLineNumInt);
             }
         }
     }
@@ -506,7 +509,7 @@ public class TestRunnerUtils {
     }
 
     public static Map<String, String> getDetailsOfTest(ITestContext context, ITestResult result) {
-        Map<String, String> testDetails = new HashMap<>();
+        Map<String, String> testDetails = new HashMap<>(6);
         testDetails.put(FILENAME, (String) context.getAttribute(FILENAME));
         testDetails.put(KIND, (String) context.getAttribute(KIND));
         testDetails.put(ABS_LINE_NUM, (String) context.getAttribute(ABS_LINE_NUM));
@@ -535,7 +538,7 @@ public class TestRunnerUtils {
 
             Iterator<Diagnostic> iterator = diagnostics.iterator();
             for (int i = 0; i < diagnostics.size(); i++) {
-                Map<String, String> results = new HashMap<>();
+                Map<String, String> results = new HashMap<>(6);
                 results.put(FILENAME, detailsOfTest.get(FILENAME));
                 results.put(KIND, detailsOfTest.get(KIND));
                 results.put(ABS_LINE_NUM, detailsOfTest.get(ABS_LINE_NUM));
