@@ -59,7 +59,7 @@ public class BResourceFunction extends BAttachedFunction {
             Name resourcePath = this.resourcePath.get(i);
             if (resourcePath.value.equals("*") || resourcePath.value.equals("$*")) {
                 resourcePathStrings.add("[" + resourcePathType.tupleTypes.get(i) + "]");
-            } else if (resourcePath.value.equals("**") || resourcePath.value.equals("$**")) {
+            } else if (resourcePath.value.equals("$$EMPTY_REST_PARAM$$") || resourcePath.value.equals("$$NON_EMPTY_REST_PARAM$$")) {
                 resourcePathStrings.add("[" + resourcePathType.restType + "...]");
             } else {
                 resourcePathStrings.add(resourcePath.value);

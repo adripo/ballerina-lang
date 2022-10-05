@@ -794,9 +794,9 @@ public class BLangNodeBuilder extends NodeTransformer<BLangNode> {
                     if (!param.name.value.equals(Names.EMPTY.value)) {
                         params.add(param);
                         bLFunction.addPathParam(param);
-                        bLFunction.resourcePath.add(createIdentifier(getPosition(pathSegment), "*"));
+                        bLFunction.resourcePath.add(createIdentifier(getPosition(pathSegment), "$$EMPTY_PARAM$$"));
                     } else {
-                        bLFunction.resourcePath.add(createIdentifier(getPosition(pathSegment), "$*"));
+                        bLFunction.resourcePath.add(createIdentifier(getPosition(pathSegment), "$$NON_EMPTY_PARAM$$"));
                     }
 
                     tupleTypeNode.memberTypeNodes.add(param.typeNode);
@@ -806,9 +806,9 @@ public class BLangNodeBuilder extends NodeTransformer<BLangNode> {
                     if (!restParam.name.value.equals(Names.EMPTY.value)) {
                         params.add(restParam);
                         bLFunction.setRestPathParam(restParam);
-                        bLFunction.resourcePath.add(createIdentifier(getPosition(pathSegment), "**"));
+                        bLFunction.resourcePath.add(createIdentifier(getPosition(pathSegment), "$$EMPTY_REST_PARAM$$"));
                     } else {
-                        bLFunction.resourcePath.add(createIdentifier(getPosition(pathSegment), "$**"));
+                        bLFunction.resourcePath.add(createIdentifier(getPosition(pathSegment), "$$NON_EMPTY_REST_PARAM$$"));
                     }
                     
                     tupleTypeNode.restParamType = ((BLangArrayType) restParam.typeNode).elemtype;
