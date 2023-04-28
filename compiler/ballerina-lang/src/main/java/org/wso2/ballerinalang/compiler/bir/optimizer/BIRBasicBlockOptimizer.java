@@ -76,9 +76,9 @@ public class BIRBasicBlockOptimizer extends BIRVisitor {
         populatePredecessorMap(birFunction.basicBlocks);
 
         // Remove unnecessary goto basic blocks
-        Set<BIRBasicBlock> removableGOTOBasicBlocks = getRemovableBasicBlocks(birFunction, funcEnv);
-        resetEndBasicBlock(birFunction, removableGOTOBasicBlocks);
-        birFunction.basicBlocks.removeAll(removableGOTOBasicBlocks);
+//        Set<BIRBasicBlock> removableGOTOBasicBlocks = getRemovableBasicBlocks(birFunction, funcEnv);
+//        resetEndBasicBlock(birFunction, removableGOTOBasicBlocks);
+//        birFunction.basicBlocks.removeAll(removableGOTOBasicBlocks);
         BIRGenUtils.rearrangeBasicBlocks(birFunction);
     }
 
