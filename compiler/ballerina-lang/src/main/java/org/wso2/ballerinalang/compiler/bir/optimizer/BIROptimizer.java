@@ -84,7 +84,7 @@ public class BIROptimizer {
         this.lhsTempVarOptimizer.optimizeNode(pkg, null);
 
         // Optimize lock statements
-        this.lockOptimizer.optimizeNode(pkg);
+//        this.lockOptimizer.optimizeNode(pkg);
 
         // Optimize BB - unnecessary goto removal
         bbOptimizer.optimizeNode(pkg, null);
