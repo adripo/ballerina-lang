@@ -42,6 +42,7 @@ public class BLock {
         if (isLockFree() || lockedBySameContext(strand)) {
             this.current.offerLast(strand);
             strand.acquiredLockCount++;
+            System.out.println("lock aquired");
             return true;
         }
 
@@ -50,6 +51,7 @@ public class BLock {
         // Strand state change
         strand.setState(State.BLOCK_AND_YIELD);
         strand.blockedOnExtern = false;
+        System.out.println("lock not aquired");
         return false;
     }
 
@@ -57,7 +59,9 @@ public class BLock {
         //current cannot be empty as unlock cannot be called without lock being called first.
         Strand removedStrand = this.current.removeLast();
         removedStrand.acquiredLockCount--;
+        System.out.println("waiting lock");
         if (!waitingForLock.isEmpty()) {
+            System.out.println("unlock");
             Strand strand = this.waitingForLock.removeFirst();
             strand.scheduler.unblockStrand(strand);
         }
