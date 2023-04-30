@@ -107,6 +107,7 @@ public class RunNativeImageTestTask implements Task {
 
     private static final String OS = System.getProperty("os.name").toLowerCase(Locale.getDefault());
     private static final String WIN_EXEC_EXT = "exe";
+    public static final java.io.PrintStream OUT = System.out;
 
     private static class StreamGobbler extends Thread {
         private InputStream inputStream;
@@ -403,6 +404,7 @@ public class RunNativeImageTestTask implements Task {
                 int testResult = 1;
                 try {
                     testResult = runTestSuiteWithNativeImage(project.currentPackage(), target, testSuiteMap);
+                    OUT.println(testResult);
                     if (testResult != 0) {
                         accumulatedTestResult = testResult;
                     }
@@ -438,10 +440,10 @@ public class RunNativeImageTestTask implements Task {
                 throw createLauncherException("error occurred while generating test report:", e);
             }
         }
-
+        OUT.println(accumulatedTestResult);
         if (accumulatedTestResult != 0) {
             TestUtils.cleanTempCache(project, cachesRoot);
-            throw createLauncherException("there are test failures");
+            throw createLauncherException("there are test failures" + accumulatedTestResult);
         }
 
 

@@ -39,10 +39,10 @@ public class BLock {
     }
 
     public synchronized boolean lock(Strand strand) {
+//        System.out.println("getting lock" + waitingForLock.size() + " strand id " + strand.getId());
         if (isLockFree() || lockedBySameContext(strand)) {
             this.current.offerLast(strand);
             strand.acquiredLockCount++;
-            System.out.println("lock aquired");
             return true;
         }
 
@@ -51,19 +51,19 @@ public class BLock {
         // Strand state change
         strand.setState(State.BLOCK_AND_YIELD);
         strand.blockedOnExtern = false;
-        System.out.println("lock not aquired");
+//        System.out.println("lock not aquired");
         return false;
     }
 
-    public synchronized void unlock() {
+    public synchronized void unlock(String location) {
         //current cannot be empty as unlock cannot be called without lock being called first.
         Strand removedStrand = this.current.removeLast();
         removedStrand.acquiredLockCount--;
-        System.out.println("waiting lock");
+//        System.out.println("unlock lock" + waitingForLock.size() + " strand id " + removedStrand.getId() + " " + location);
         if (!waitingForLock.isEmpty()) {
-            System.out.println("unlock");
             Strand strand = this.waitingForLock.removeFirst();
             strand.scheduler.unblockStrand(strand);
+//            System.out.println("unblock strand " + strand.getId());
         }
     }
 

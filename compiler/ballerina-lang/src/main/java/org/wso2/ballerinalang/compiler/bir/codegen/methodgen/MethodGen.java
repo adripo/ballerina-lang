@@ -80,6 +80,7 @@ import static org.objectweb.asm.Opcodes.FCONST_0;
 import static org.objectweb.asm.Opcodes.FLOAD;
 import static org.objectweb.asm.Opcodes.FSTORE;
 import static org.objectweb.asm.Opcodes.GETFIELD;
+import static org.objectweb.asm.Opcodes.GETSTATIC;
 import static org.objectweb.asm.Opcodes.GOTO;
 import static org.objectweb.asm.Opcodes.IADD;
 import static org.objectweb.asm.Opcodes.ICONST_0;
@@ -212,7 +213,12 @@ public class MethodGen {
         }
         MethodVisitor mv = cw.visitMethod(access, funcName, desc, null, null);
         mv.visitCode();
-
+//        if (moduleClassName.contains("http") && !moduleClassName.contains("value") &&
+//                !moduleClassName.contains("gen")  && !moduleClassName.contains("test")) {
+//            mv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+//            mv.visitLdcInsn(moduleClassName + "/" + funcName);
+//            mv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
+//        }
         visitModuleStartFunction(module.packageID, funcName, mv);
 
         Label methodStartLabel = new Label();

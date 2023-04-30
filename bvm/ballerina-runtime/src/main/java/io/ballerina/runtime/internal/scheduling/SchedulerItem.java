@@ -55,7 +55,7 @@ class SchedulerItem {
     }
 
     public boolean isYielded() {
-        return this.future.strand.isYielded();
+        return this.future.strand.isYielded("");
     }
 
     public State getState() {

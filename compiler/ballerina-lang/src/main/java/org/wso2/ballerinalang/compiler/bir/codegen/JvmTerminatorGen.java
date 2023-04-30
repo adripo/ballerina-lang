@@ -245,7 +245,13 @@ public class JvmTerminatorGen {
                                              String fullyQualifiedFuncName, Location terminatorPos) {
 
         mv.visitVarInsn(ALOAD, localVarOffset);
-        mv.visitMethodInsn(INVOKEVIRTUAL, STRAND_CLASS, "isYielded", "()Z", false);
+        StringBuilder yieldLocationData = new StringBuilder(fullyQualifiedFuncName);
+        if (terminatorPos != null) {
+            yieldLocationData.append("(").append(terminatorPos.lineRange().fileName()).append(":")
+                    .append(terminatorPos.lineRange().startLine().line() + 1).append(")");
+        }
+        mv.visitLdcInsn(yieldLocationData.toString());
+        mv.visitMethodInsn(INVOKEVIRTUAL, STRAND_CLASS, "isYielded", "(Ljava/lang/String;)Z", false);
         JvmCodeGenUtil.generateSetYieldedStatus(mv, labelGen, funcName, yieldLocationVarIndex,
                 terminatorPos, fullyQualifiedFuncName, "WAITING FOR LOCK", yieldStatusVarIndex);
     }
@@ -344,15 +350,16 @@ public class JvmTerminatorGen {
 
         switch (terminator.kind) {
             case LOCK:
-                this.genLockTerm((BIRTerminator.Lock) terminator, funcName, localVarOffset, yieldLocationVarIndex,
-                        terminator.pos, fullyQualifiedFuncName, yieldStatusVarIndex);
+                this.genLockTerm((BIRTerminator.Lock) terminator, funcName, currentBB, localVarOffset,
+                        yieldLocationVarIndex, terminator.pos, fullyQualifiedFuncName, yieldStatusVarIndex,
+                        stateVarIndex, loopVarIndex, loopLabel);
                 return;
             case UNLOCK:
-                this.genUnlockTerm((BIRTerminator.Unlock) terminator, funcName);
+                this.genUnlockTerm((BIRTerminator.Unlock) terminator, funcName, currentBB, stateVarIndex, loopVarIndex, loopLabel);
                 return;
             case GOTO:
                 this.genGoToTerm((BIRTerminator.GOTO) terminator, funcName, currentBB, stateVarIndex, loopVarIndex,
-                        loopLabel);
+                        loopLabel, moduleClassName);
                 return;
             case CALL:
                 this.genCallTerm((BIRTerminator.Call) terminator, localVarOffset);
@@ -400,23 +407,31 @@ public class JvmTerminatorGen {
     }
 
     private void genGoToTerm(BIRTerminator.GOTO gotoIns, String funcName, BIRNode.BIRBasicBlock currentBB,
-                             int stateVarIndex, int loopVarIndex, Label loopLabel) {
+                             int stateVarIndex, int loopVarIndex, Label loopLabel, String moduleClassName) {
         int currentBBNumber = currentBB.number;
         int gotoBBNumber = gotoIns.targetBB.number;
-        if (currentBBNumber <= gotoBBNumber) {
+//        if (currentBBNumber <= gotoBBNumber) {
             Label gotoLabel = this.labelGen.getLabel(funcName + gotoIns.targetBB.id.value);
             this.mv.visitJumpInsn(GOTO, gotoLabel);
-            return;
-        }
-        this.mv.visitInsn(ICONST_1);
-        this.mv.visitVarInsn(ISTORE, loopVarIndex);
-        this.mv.visitIntInsn(SIPUSH, gotoBBNumber);
-        this.mv.visitVarInsn(ISTORE, stateVarIndex);
-        this.mv.visitJumpInsn(GOTO, loopLabel);
+//            return;
+//        } else if (moduleClassName.contains("http")) {
+//            System.out.println(moduleClassName + ":" + funcName);
+//            Label gotoLabel = this.labelGen.getLabel(funcName + gotoIns.targetBB.id.value);
+//            this.mv.visitJumpInsn(GOTO, gotoLabel);
+//            return;
+//        }
+//        System.out.println(moduleClassName + ":" + funcName);
+//        this.mv.visitInsn(ICONST_1);
+//        this.mv.visitVarInsn(ISTORE, loopVarIndex);
+//        this.mv.visitIntInsn(SIPUSH, gotoBBNumber);
+//        this.mv.visitVarInsn(ISTORE, stateVarIndex);
+//        this.mv.visitJumpInsn(GOTO, loopLabel);
     }
 
-    private void genLockTerm(BIRTerminator.Lock lockIns, String funcName, int localVarOffset, int yieldLocationVarIndex,
-                             Location terminatorPos, String fullyQualifiedFuncName, int yieldStatusVarIndex) {
+    private void genLockTerm(BIRTerminator.Lock lockIns, String funcName, BIRNode.BIRBasicBlock currentBB,
+                             int localVarOffset, int yieldLocationVarIndex, Location terminatorPos,
+                             String fullyQualifiedFuncName, int yieldStatusVarIndex,
+                             int loopVarIndex, int stateVarIndex, Label loopLabel) {
 
         Label gotoLabel = this.labelGen.getLabel(funcName + lockIns.lockedBB.id.value);
         String lockStore = "L" + LOCK_STORE + ";";
@@ -430,10 +445,22 @@ public class JvmTerminatorGen {
         this.mv.visitInsn(POP);
         genYieldCheckForLock(this.mv, this.labelGen, funcName, localVarOffset, yieldLocationVarIndex,
                 yieldStatusVarIndex, fullyQualifiedFuncName, terminatorPos);
-        this.mv.visitJumpInsn(GOTO, gotoLabel);
+        int currentBBNumber = currentBB.number;
+        int gotoBBNumber = lockIns.lockedBB.number;
+//        if (currentBBNumber <= gotoBBNumber) {
+            this.mv.visitJumpInsn(GOTO, gotoLabel);
+//            return;
+//        }
+//        System.out.println(funcName);
+//        this.mv.visitInsn(ICONST_1);
+//        this.mv.visitVarInsn(ISTORE, loopVarIndex);
+//        this.mv.visitIntInsn(SIPUSH, gotoBBNumber);
+//        this.mv.visitVarInsn(ISTORE, stateVarIndex);
+//        this.mv.visitJumpInsn(GOTO, loopLabel);
     }
 
-    private void genUnlockTerm(BIRTerminator.Unlock unlockIns, String funcName) {
+    private void genUnlockTerm(BIRTerminator.Unlock unlockIns, String funcName, BIRNode.BIRBasicBlock currentBB,
+                               int stateVarIndex, int loopVarIndex, Label loopLabel) {
 
         Label gotoLabel = this.labelGen.getLabel(funcName + unlockIns.unlockBB.id.value);
 
@@ -444,9 +471,24 @@ public class JvmTerminatorGen {
         this.mv.visitFieldInsn(GETSTATIC, initClassName, LOCK_STORE_VAR_NAME, lockStore);
         this.mv.visitLdcInsn(lockName);
         this.mv.visitMethodInsn(INVOKEVIRTUAL, LOCK_STORE, "getLockFromMap", GET_LOCK_MAP, false);
-        this.mv.visitMethodInsn(INVOKEVIRTUAL, LOCK_VALUE, "unlock", VOID_METHOD_DESC, false);
-
-        this.mv.visitJumpInsn(GOTO, gotoLabel);
+        if (unlockIns.pos != null) {
+            this.mv.visitLdcInsn(funcName + " " + unlockIns.pos.toString() + unlockIns.pos.lineRange().fileName());
+        } else {
+            this.mv.visitLdcInsn(funcName);
+        }
+        this.mv.visitMethodInsn(INVOKEVIRTUAL, LOCK_VALUE, "unlock", "(Ljava/lang/String;)V", false);
+        int currentBBNumber = currentBB.number;
+        int gotoBBNumber = unlockIns.unlockBB.number;
+//        if (currentBBNumber <= gotoBBNumber) {
+            this.mv.visitJumpInsn(GOTO, gotoLabel);
+//            return;
+//        }
+//        System.out.println(funcName);
+//        this.mv.visitInsn(ICONST_1);
+//        this.mv.visitVarInsn(ISTORE, loopVarIndex);
+//        this.mv.visitIntInsn(SIPUSH, gotoBBNumber);
+//        this.mv.visitVarInsn(ISTORE, stateVarIndex);
+//        this.mv.visitJumpInsn(GOTO, loopLabel);
     }
 
     private void handleErrorRetInUnion(int returnVarRefIndex, List<BIRNode.ChannelDetails> channels, BUnionType bType,
@@ -494,30 +536,30 @@ public class JvmTerminatorGen {
         int trueBBNumber = branchIns.trueBB.number;
         int falseBBNumber = branchIns.falseBB.number;
         this.loadVar(branchIns.op.variableDcl);
-        if (currentBBNumber <= trueBBNumber) {
+//        if (currentBBNumber <= trueBBNumber) {
             Label trueBBLabel = this.labelGen.getLabel(funcName + trueBBId);
             this.mv.visitJumpInsn(IFGT, trueBBLabel);
-        } else {
-            Label condition = new Label();
-            this.mv.visitJumpInsn(IFGT, condition);
-            this.mv.visitInsn(ICONST_1);
-            this.mv.visitVarInsn(ISTORE, loopVarIndex);
-            this.mv.visitIntInsn(SIPUSH, trueBBNumber);
-            this.mv.visitVarInsn(ISTORE, stateVarIndex);
-            this.mv.visitJumpInsn(GOTO, loopLabel);
-            this.mv.visitLabel(condition);
-        }
+//        } else {
+//            Label condition = new Label();
+//            this.mv.visitJumpInsn(IFGT, condition);
+//            this.mv.visitInsn(ICONST_1);
+//            this.mv.visitVarInsn(ISTORE, loopVarIndex);
+//            this.mv.visitIntInsn(SIPUSH, trueBBNumber);
+//            this.mv.visitVarInsn(ISTORE, stateVarIndex);
+//            this.mv.visitJumpInsn(GOTO, loopLabel);
+//            this.mv.visitLabel(condition);
+//        }
 
-        if (currentBBNumber <= falseBBNumber) {
+//        if (currentBBNumber <= falseBBNumber) {
             Label falseBBLabel = this.labelGen.getLabel(funcName + falseBBId);
             this.mv.visitJumpInsn(GOTO, falseBBLabel);
-        } else {
-            this.mv.visitInsn(ICONST_1);
-            this.mv.visitVarInsn(ISTORE, loopVarIndex);
-            this.mv.visitIntInsn(SIPUSH, falseBBNumber);
-            this.mv.visitVarInsn(ISTORE, stateVarIndex);
-            this.mv.visitJumpInsn(GOTO, loopLabel);
-        }
+//        } else {
+//            this.mv.visitInsn(ICONST_1);
+//            this.mv.visitVarInsn(ISTORE, loopVarIndex);
+//            this.mv.visitIntInsn(SIPUSH, falseBBNumber);
+//            this.mv.visitVarInsn(ISTORE, stateVarIndex);
+//            this.mv.visitJumpInsn(GOTO, loopLabel);
+//        }
     }
 
     private void genCallTerm(BIRTerminator.Call callIns, int localVarOffset) {

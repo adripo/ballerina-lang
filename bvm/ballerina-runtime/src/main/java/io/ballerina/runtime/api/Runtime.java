@@ -49,6 +49,10 @@ public class Runtime {
         this.scheduler = scheduler;
     }
 
+
+    public static Object nativeRespond(Environment env, BObject connectionObj, BObject outboundResponseObj) {
+        return null;
+    }
     /**
      * Gets the instance of ballerina runtime.
      *

@@ -389,7 +389,7 @@ public class Strand {
         return (this.state.getStatus() & BLOCK_ON_AND_YIELD.getStatus()) == BLOCK_ON_AND_YIELD.getStatus();
     }
 
-    public boolean isYielded() {
+    public boolean isYielded(String Location) {
         return (this.state.getStatus() & YIELD.getStatus()) == YIELD.getStatus();
     }
 
@@ -453,7 +453,7 @@ public class Strand {
         strandInfo.append("] [");
 
         String closingBracketWithNewLines = "]\n\n";
-        if (this.isYielded()) {
+        if (this.isYielded("")) {
             getInfoFromYieldedState(strandInfo, closingBracketWithNewLines);
         } else if (this.getState().equals(DONE)) {
             strandInfo.append(DONE).append(closingBracketWithNewLines);
@@ -493,7 +493,7 @@ public class Strand {
             strandInfo.append(RUNNABLE).append(closingBracketWithNewLines);
             return;
         }
-        if (!this.isYielded() || noPickedYieldStatus) {
+        if (!this.isYielded("") || noPickedYieldStatus) {
             // if frames have got empty, noPickedYieldStatus is true, then the state has changed to runnable
             strandInfo.append(RUNNABLE).append(closingBracketWithNewLines);
             return;

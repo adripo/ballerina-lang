@@ -2323,11 +2323,14 @@ public class BIRGen extends BLangNodeVisitor {
             return;
         }
         BIRBasicBlock unLockedBB = new BIRBasicBlock(this.env.nextBBId());
+        BIRBasicBlock gotoBB = new BIRBasicBlock(this.env.nextBBId());
         addToTrapStack(unLockedBB);
         this.env.enclBasicBlocks.add(unLockedBB);
+        this.env.enclBasicBlocks.add(gotoBB);
         this.env.enclBB.terminator = new BIRTerminator.Unlock(unLockStmt.pos, unLockedBB, this.currentScope);
         ((BIRTerminator.Unlock) this.env.enclBB.terminator).relatedLock = lockStmtMap.get(unLockStmt.relatedLock);
-        this.env.enclBB = unLockedBB;
+        unLockedBB.terminator = new BIRTerminator.GOTO(unLockedBB.pos, gotoBB, this.currentScope);
+        this.env.enclBB = gotoBB;
 
         lockDetailsHolder.removeLastLock();
     }
