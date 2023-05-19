@@ -102,12 +102,11 @@ public class PackageID {
     public Name name;
     public Name version;
 
+    public final boolean isUnnamed;
+    public final boolean isTestPkg;
+    public final Name sourceFileName;
+
     public final List<Name> nameComps;
-    public boolean isUnnamed = false;
-    public boolean skipTests = true;
-    public boolean isTestPkg = false;
-    public Name sourceFileName = null;
-    public String sourceRoot = null;
 
     public PackageID(Name orgName, List<Name> nameComps, Name version) {
         this.orgName = orgName;
@@ -119,6 +118,9 @@ public class PackageID {
         // TODO: The package name should be distinguishable when the pkgName != moduleName
         this.pkgName = name;
         this.version = version;
+        isUnnamed = false;
+        sourceFileName = null;
+        this.isTestPkg = false;
     }
 
     public PackageID(Name orgName, Name pkgName, Name name, Name version, Name sourceFileName) {
@@ -127,7 +129,9 @@ public class PackageID {
         this.pkgName = pkgName;
         this.version = version;
         this.nameComps = createNameComps(name);
+        isUnnamed = false;
         this.sourceFileName = sourceFileName;
+        this.isTestPkg = false;
     }
 
     public PackageID(Name orgName, Name name, Name version) {
@@ -137,29 +141,33 @@ public class PackageID {
         this.pkgName = name;
         this.version = version;
         this.nameComps = createNameComps(name);
+        isUnnamed = false;
+        sourceFileName = null;
+        this.isTestPkg = false;
     }
 
     public PackageID(Name orgName, Name name, Name version, Name sourceFileName) {
-        this(orgName, name, version);
+        this.orgName = orgName;
+        this.name = name;
+        // TODO: The package name should be distinguishable when the pkgName != moduleName
+        this.pkgName = name;
+        this.version = version;
+        this.nameComps = createNameComps(name);
+        isUnnamed = false;
         this.sourceFileName = sourceFileName;
+        this.isTestPkg = false;
     }
 
     public PackageID(Name orgName, Name pkgName, Name name, Name version, Name sourceFileName,
-                     boolean isTestPkg, boolean skipTest) {
+                     boolean isTestPkg) {
         this.orgName = orgName;
         this.name = name;
         this.pkgName = pkgName;
         this.version = version;
         this.nameComps = createNameComps(name);
+        isUnnamed = false;
         this.sourceFileName = sourceFileName;
         this.isTestPkg = isTestPkg;
-        this.skipTests = skipTest;
-    }
-
-    public PackageID(Name orgName, Name pkgName, Name name, Name version, Name sourceFileName, String sourceRoot,
-                     boolean isTestPkg, boolean skipTest) {
-        this(orgName, pkgName, name, version, sourceFileName, isTestPkg, skipTest);
-        this.sourceRoot = sourceRoot;
     }
 
     private List<Name> createNameComps(Name name) {
@@ -185,6 +193,7 @@ public class PackageID {
         this.nameComps = Lists.of(Names.DEFAULT_PACKAGE);
         this.isUnnamed = true;
         this.sourceFileName = new Name(sourceFileName);
+        this.isTestPkg = false;
     }
 
     /**
@@ -202,6 +211,7 @@ public class PackageID {
         this.isUnnamed = true;
         this.sourceFileName = new Name(sourceFileName);
         this.version = DEFAULT_VERSION;
+        this.isTestPkg = false;
     }
 
     public Name getPkgName() {

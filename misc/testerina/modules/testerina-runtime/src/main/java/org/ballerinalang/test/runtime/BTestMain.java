@@ -22,6 +22,7 @@ import com.google.gson.reflect.TypeToken;
 import io.ballerina.projects.util.ProjectConstants;
 import org.ballerinalang.test.runtime.entity.MockFunctionReplaceVisitor;
 import org.ballerinalang.test.runtime.entity.ModuleStatus;
+import org.ballerinalang.test.runtime.entity.TestArguments;
 import org.ballerinalang.test.runtime.entity.TestReport;
 import org.ballerinalang.test.runtime.entity.TestSuite;
 import org.ballerinalang.test.runtime.exceptions.BallerinaTestException;
@@ -124,14 +125,10 @@ public class BTestMain {
                             replaceMockedFunctions(testSuite, testExecutionDependencies, instrumentDir, coverage);
                         }
 
-                        String[] testArgs = new String[]{args[0], packageName, moduleName};
-                        for (int i = 2; i < args.length; i++) {
-                            testArgs = Arrays.copyOf(testArgs, testArgs.length + 1);
-                            testArgs[testArgs.length - 1] = args[i];
-                        }
-
                         result = startTestSuit(Paths.get(testSuite.getSourceRootPath()), testSuite, classLoader,
-                                testArgs);
+                                new TestArguments(args[0], packageName, moduleName,
+                                        args[2], args[3], args[4], args[5], args[6], args[7],
+                                        args[8]), Arrays.copyOfRange(args, 9, args.length));
                         exitStatus = (result == 1) ? result : exitStatus;
                     }
                 } else {
@@ -146,11 +143,14 @@ public class BTestMain {
     }
 
     private static int startTestSuit(Path sourceRootPath, TestSuite testSuite, ClassLoader classLoader,
-                                     String[] args) {
+                                     TestArguments args, String[] cliArgs) {
+        int exitStatus = 0;
         try {
-            return TesterinaUtils.executeTests(sourceRootPath, testSuite, classLoader, args, out);
+            TesterinaUtils.executeTests(sourceRootPath, testSuite, classLoader, args, cliArgs, out);
         } catch (RuntimeException e) {
-            return 1;
+            exitStatus = 1;
+        } finally {
+            return exitStatus;
         }
     }
 
