@@ -46,6 +46,8 @@ public class CheckedOnFailExprNegativeTest {
         validateError(negativeResult, i++, "incompatible types: expected 'int', found '()'", 26, 16);
         validateError(negativeResult, i++, "operator '+' not defined for 'int' and 'float'", 32, 15);
         validateError(negativeResult, i++, "redeclared symbol 'num'", 37, 30);
+        validateError(negativeResult, i++, "incompatible types: expected 'error', found 'int'", 41, 41);
+        validateError(negativeResult, i++, "incompatible types: expected 'error', found '(int|error)'", 42, 41);
         Assert.assertEquals(negativeResult.getDiagnosticResult().diagnosticCount(), i);
     }
 

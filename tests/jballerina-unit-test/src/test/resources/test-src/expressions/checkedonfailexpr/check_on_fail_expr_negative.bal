@@ -36,3 +36,8 @@ function testRedeclareSymbolWithInCheckedOnFailExpression() {
     int num = 5;
     var val = check from int num in [1, 2, 3] where num >= 2 select num on fail e => error("Error occurred", e);
 }
+
+function testInvalidReturnType() {
+    _ = check returnInt2() on fail e => returnInt();
+    _ = check returnInt2() on fail e => returnInt2();
+}

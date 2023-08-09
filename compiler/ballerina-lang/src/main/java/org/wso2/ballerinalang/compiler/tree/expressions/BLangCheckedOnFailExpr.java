@@ -37,7 +37,7 @@ public class BLangCheckedOnFailExpr extends BLangExpression implements CheckedEx
 
     public BLangCheckedExpr checkedExpr;
     public BLangSimpleVariable simpleVariable;
-    public BLangExpression errorConstructorExpr;
+    public BLangExpression expr;
 
     @Override
     public NodeKind getKind() {
